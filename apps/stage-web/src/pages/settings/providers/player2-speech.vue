@@ -9,6 +9,7 @@ import {
 } from '@proj-airi/stage-ui/components'
 import { useSpeechStore } from '@proj-airi/stage-ui/stores/modules/speech'
 import { useProvidersStore } from '@proj-airi/stage-ui/stores/providers'
+import { removeTrailingSlash } from '@proj-airi/stage-ui/utils/string'
 import { FieldRange } from '@proj-airi/ui'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -58,7 +59,7 @@ onMounted(async () => {
   }
 
   try {
-    const res = await fetch(`${providerConfig.baseUrl.endsWith('/') ? providerConfig.baseUrl.slice(0, -1) : providerConfig.baseUrl}/health`, {
+    const res = await fetch(`${removeTrailingSlash(providerConfig.baseUrl)}/health`, {
       method: 'GET',
       headers: {
         'player2-game-key': 'airi',
