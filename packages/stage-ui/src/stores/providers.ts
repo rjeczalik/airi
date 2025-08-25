@@ -48,7 +48,7 @@ import {
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isAbsoluteUrl } from '../utils/string'
+import { isAbsoluteUrl, removeTrailingSlash } from '../utils/string'
 import { models as elevenLabsModels } from './providers/elevenlabs/list-models'
 
 export interface ProviderMetadata {
@@ -2136,7 +2136,7 @@ export const useProvidersStore = defineStore('providers', () => {
           }
 
           // Check if the local running Player 2 is reachable
-          return await fetch(`${(config.baseUrl as string).endsWith('/') ? (config.baseUrl as string).slice(0, -1) : config.baseUrl}/health`, {
+          return await fetch(`${removeTrailingSlash(config.baseUrl as string)}/health`, {
             method: 'GET',
             headers: {
               'player2-game-key': 'airi',
@@ -2178,7 +2178,7 @@ export const useProvidersStore = defineStore('providers', () => {
       createProvider: async config => createPlayer2((config.baseUrl as string).trim(), 'airi'),
       capabilities: {
         listVoices: async (config) => {
-          const baseUrl = (config.baseUrl as string).endsWith('/') ? (config.baseUrl as string).slice(0, -1) : config.baseUrl as string
+          const baseUrl = removeTrailingSlash(config.baseUrl as string)
           return await fetch(`${baseUrl}/tts/voices`).then(res => res.json()).then(({ voices }) => (voices as { id: string, language: 'american_english' | 'british_english' | 'japanese' | 'mandarin_chinese' | 'spanish' | 'french' | 'hindi' | 'italian' | 'brazilian_portuguese', name: string, gender: string }[]).map(({ id, language, name, gender }) => (
             {
 
