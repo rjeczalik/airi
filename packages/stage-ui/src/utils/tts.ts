@@ -7,6 +7,13 @@ import { readGraphemeClusters } from 'clustr'
 // A special character to instruct the TTS pipeline to flush
 export const TTS_FLUSH_INSTRUCTION = '\u200B'
 
+/**
+ * Counts the number of word-like segments in the given text
+ */
+function countWords(text: string, segmenter: Intl.Segmenter): number {
+  return [...segmenter.segment(text)].filter(w => w.isWordLike).length
+}
+
 const keptPunctuations = new Set('?？!！')
 const hardPunctuations = new Set('.。?？!！…⋯～~\n\t\r')
 const softPunctuations = new Set(',，、–—:：;；《》「」')
@@ -124,12 +131,15 @@ export async function* chunkTTSInput(input: string | ReaderLike, options?: TTSIn
 
       if (chunkWordsCount > minimumWords && chunkWordsCount + words.length > maximumWords) {
         const text = kept ? chunk.trim() + value : chunk.trim()
-        yield {
-          text,
-          words: chunkWordsCount,
-          reason: 'limit',
+        const textWords = countWords(text, segmenter)
+        if (text.length > 0 && textWords > 0) {
+          yield {
+            text,
+            words: chunkWordsCount,
+            reason: 'limit',
+          }
+          yieldCount++
         }
-        yieldCount++
         chunk = ''
         chunkWordsCount = 0
       }
@@ -140,12 +150,15 @@ export async function* chunkTTSInput(input: string | ReaderLike, options?: TTSIn
 
       if (flush || hard || chunkWordsCount > maximumWords || yieldCount < boost) {
         const text = chunk.trim()
-        yield {
-          text,
-          words: chunkWordsCount,
-          reason: flush ? 'flush' : hard ? 'hard' : chunkWordsCount > maximumWords ? 'limit' : 'boost',
+        const textWords = countWords(text, segmenter)
+        if (text.length > 0 && textWords > 0) {
+          yield {
+            text,
+            words: chunkWordsCount,
+            reason: flush ? 'flush' : hard ? 'hard' : chunkWordsCount > maximumWords ? 'limit' : 'boost',
+          }
+          yieldCount++
         }
-        yieldCount++
         chunk = ''
         chunkWordsCount = 0
       }
@@ -193,10 +206,13 @@ export async function* chunkTTSInput(input: string | ReaderLike, options?: TTSIn
   console.debug('while loop ends, chunk/buffer:', chunk, buffer)
   if (chunk.length > 0 || buffer.length > 0) {
     const text = (chunk + buffer).trim()
-    yield {
-      text,
-      words: chunkWordsCount + [...segmenter.segment(buffer)].filter(w => w.isWordLike).length,
-      reason: 'flush',
+    const textWords = countWords(text, segmenter)
+    if (text.length > 0 && textWords > 0) {
+      yield {
+        text,
+        words: chunkWordsCount + countWords(buffer, segmenter),
+        reason: 'flush',
+      }
     }
   }
 }

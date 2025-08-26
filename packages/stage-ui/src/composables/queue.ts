@@ -80,26 +80,28 @@ export function useQueue<T>(options: {
 
     isProcessing.value = true
 
-    for (const handler of options.handlers) {
-      // If there is a need to register customised listener for processing event, then this line of code should be rewritten
-      // handlers as the input parameter is only designed for the add event
-      emit('processing', payload, handler)
-      try {
-        // Use handler to deal with the newly enqueued item
-        const result = await handler({ data: payload, itemsToBeProcessed: () => queue.value.length, emit: emitHandlerEvent })
+    try {
+      for (const handler of options.handlers) {
         // If there is a need to register customised listener for processing event, then this line of code should be rewritten
         // handlers as the input parameter is only designed for the add event
-        emit('processed', payload, result, handler)
+        emit('processing', payload, handler)
+        try {
+          // Use handler to deal with the newly enqueued item
+          const result = await handler({ data: payload, itemsToBeProcessed: () => queue.value.length, emit: emitHandlerEvent })
+          // If there is a need to register customised listener for processing event, then this line of code should be rewritten
+          // handlers as the input parameter is only designed for the add event
+          emit('processed', payload, result, handler)
+        }
+        catch (err) {
+          // If there is a need to register customised listener for processing event, then this line of code should be rewritten
+          // handlers as the input parameter is only designed for the add event
+          emit('error', payload, err as Error, handler)
+          continue
+        }
       }
-      catch (err) {
-        // If there is a need to register customised listener for processing event, then this line of code should be rewritten
-        // handlers as the input parameter is only designed for the add event
-        emit('error', payload, err as Error, handler)
-        continue
-      }
+    } finally {
+      isProcessing.value = false
     }
-
-    isProcessing.value = false
     emit('done', payload)
 
     // Process next item if any
